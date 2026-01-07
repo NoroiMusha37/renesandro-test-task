@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
@@ -100,7 +101,10 @@ class MediaManager:
 
         local_video = {
             name: [mapping[str(url)] for url in video_blocks[name]]
-            for name in sorted(video_blocks.keys())
+            for name in sorted(
+                video_blocks.keys(),
+                key=lambda x: int(re.search(r'\d+', x).group())
+            )
         }
         local_audio = [mapping[str(url)] for url in unique_audio]
 
