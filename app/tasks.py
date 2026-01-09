@@ -88,7 +88,7 @@ def orchestrator(self, data: dict):
             job_chains.append(c)
 
         workflow = chord(job_chains)(
-            cleanup_task.s(task_id, start_time).set(queue="light")
+            cleanup_task.s(task_id, start_time)
         )
 
         return {
@@ -97,5 +97,5 @@ def orchestrator(self, data: dict):
             "total_combinations": len(video_combinations),
         }
     except Exception:
-        cleanup_task.delay(None, task_id, start_time).set(queue="light")
+        cleanup_task.delay(None, task_id, start_time)
         raise
