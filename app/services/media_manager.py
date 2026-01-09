@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import re
 import time
 import hashlib
@@ -13,10 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class MediaManager:
-    MIME_TO_EXT = {
-        "video/mp4": ".mp4",
-        "audio/mpeg": ".mp3",
-    }
 
     def __init__(self, task_id: str):
         self.task_id = task_id
@@ -29,49 +26,50 @@ class MediaManager:
         self.audio_dir.mkdir(parents=True, exist_ok=True)
 
     def download_file(
-        self, url: str, folder: Path, expected_mime: str
-    ) -> tuple[str, Path]:
+        self, url: str, folder: Path, expected_mime: str, client: httpx.Client
+    ) -> tuple[str, Path, int]:
 
         start_time = time.perf_counter()
         file_hash = hashlib.md5(url.encode()).hexdigest()
 
-        try:
-            ext = self.MIME_TO_EXT[expected_mime]
-        except KeyError:
-            logger.error("Unsupported mime type %s", expected_mime)
-            raise ValueError(f"No extension mapping for {expected_mime}")
+        ext = mimetypes.guess_extension(expected_mime)
+        if not ext:
+            logger.error("Unsupported file extension: %s", expected_mime)
+            raise ValueError(f"No {expected_mime} file extension found")
 
         local_path = folder.joinpath(file_hash + ext)
 
         if local_path.exists():
             logger.info("%s already cached", local_path.name)
-            return url, local_path
+            return url, local_path, local_path.stat().st_size
 
         try:
-            with httpx.Client(timeout=60, follow_redirects=True) as client:
-                with client.stream("GET", url) as response:
-                    response.raise_for_status()
+            with client.stream("GET", url, follow_redirects=True) as response:
+                response.raise_for_status()
 
-                    content_type = response.headers.get("Content-Type", "").lower()
-                    if expected_mime not in content_type:
-                        raise ValueError(
-                            f"Expected mime type "
-                            f"'{expected_mime}' but got "
-                            f"'{content_type}'"
-                        )
+                content_type = response.headers.get("Content-Type", "").lower()
+                if expected_mime not in content_type:
+                    raise ValueError(
+                        f"Expected mime type "
+                        f"'{expected_mime}' but got "
+                        f"'{content_type}'"
+                    )
 
-                    with open(local_path, "wb") as f:
-                        for chunk in response.iter_bytes(
-                            chunk_size=settings.CHUNK_SIZE
-                        ):
-                            f.write(chunk)
+                with open(local_path, "wb") as f:
+                    for chunk in response.iter_bytes(
+                        chunk_size=settings.CHUNK_SIZE
+                    ):
+                        f.write(chunk)
+
+            file_size = local_path.stat().st_size
 
             logger.info(
-                "Downloaded %s in %.2fs",
+                "Downloaded %s (%.2f MB) in %.2fs",
                 local_path.name,
+                file_size / (1024 * 1024),
                 time.perf_counter() - start_time,
             )
-            return url, local_path
+            return url, local_path, file_size
 
         except Exception as e:
             logger.error(f"Failed to download %s: %s", url, str(e))
@@ -87,17 +85,19 @@ class MediaManager:
         unique_audio = {str(url) for block in audio_blocks.values() for url in block}
 
         with ThreadPoolExecutor(max_workers=settings.MAX_DOWNLOAD_WORKERS) as executor:
-            video_tasks = [
-                executor.submit(self.download_file, url, self.video_dir, "video/mp4")
-                for url in unique_videos
-            ]
-            audio_tasks = [
-                executor.submit(self.download_file, url, self.audio_dir, "audio/mpeg")
-                for url in unique_audio
-            ]
-            all_results = [f.result() for f in video_tasks + audio_tasks]
+            with httpx.Client() as client:
+                video_tasks = [
+                    executor.submit(self.download_file, url, self.video_dir, "video/mp4", client)
+                    for url in unique_videos
+                ]
+                audio_tasks = [
+                    executor.submit(self.download_file, url, self.audio_dir, "audio/mpeg", client)
+                    for url in unique_audio
+                ]
+                all_results = [f.result() for f in video_tasks + audio_tasks]
 
-        mapping = dict(all_results)
+        total_file_size = sum([res[2] for res in all_results])
+        mapping = {res[0]: res[1] for res in all_results}
 
         local_video = {
             name: [mapping[str(url)] for url in video_blocks[name]]
@@ -108,8 +108,9 @@ class MediaManager:
         local_audio = [mapping[str(url)] for url in unique_audio]
 
         logger.info(
-            "Videos and audio for %s downloaded in %.2fs",
+            "Videos and audio for %s (%.2f MB) downloaded in %.2fs",
             self.task_id,
+            total_file_size / (1024 * 1024),
             time.perf_counter() - start_time,
         )
         return local_video, local_audio
