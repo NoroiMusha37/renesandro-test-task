@@ -13,7 +13,9 @@ class StorageService:
     def __init__(self):
         self.bucket_name = settings.GCS_BUCKET_NAME
         try:
-            credentials = service_account.Credentials.from_service_account_info(settings.gcs_credentials)
+            credentials = service_account.Credentials.from_service_account_info(
+                settings.gcs_credentials
+            )
             self.client = storage.Client(credentials=credentials)
             logger.info("GCS client initialized. Bucket: %s", self.bucket_name)
         except Exception as e:
@@ -31,6 +33,10 @@ class StorageService:
             gcs_url = f"gs://{self.bucket_name}/{remote_path}"
 
             logger.info("Successfully uploaded to %s", gcs_url)
+
+            if local_path.exists():
+                local_path.unlink()
+
             return gcs_url
         except Exception as e:
             logger.error("Failed to upload %s: %s", local_path.name, e)
