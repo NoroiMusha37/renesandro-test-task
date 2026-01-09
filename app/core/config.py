@@ -10,8 +10,13 @@ class Settings(BaseSettings):
     MAX_DOWNLOAD_WORKERS: int = 10
     CHUNK_SIZE: int = 16384
 
+    VIDEO_WIDTH: int = 1080
+    VIDEO_HEIGHT: int = 1920
+
     GCS_BUCKET_NAME: str
     GCS_SERVICE_ACCOUNT_JSON: str
+
+    REDIS_URL: str = "redis://redis:6379/0"
 
     @property
     def gcs_credentials(self):
