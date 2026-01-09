@@ -24,6 +24,7 @@ def render_task(params: dict):
         music=Path(params["music"]),
         voiceover=Path(params["voiceover"]),
         index=params["index"],
+        total_videos=params["total_videos"],
     )
 
     return str(local_path)
@@ -79,6 +80,7 @@ def orchestrator(self, data: dict):
                 "music": str(random.choice(audio_list)),
                 "voiceover": str(random.choice(voiceover_list)),
                 "index": i,
+                "total_videos": len(video_combinations),
             }
 
             c = chain(
@@ -87,9 +89,7 @@ def orchestrator(self, data: dict):
             )
             job_chains.append(c)
 
-        workflow = chord(job_chains)(
-            cleanup_task.s(task_id, start_time)
-        )
+        workflow = chord(job_chains)(cleanup_task.s(task_id, start_time))
 
         return {
             "task_id": task_id,

@@ -16,7 +16,12 @@ class VideoProcessor:
         self.video_height = settings.VIDEO_HEIGHT
 
     def render(
-        self, video_lst: list[Path], music: Path, voiceover: Path, index: int
+        self,
+        video_lst: list[Path],
+        music: Path,
+        voiceover: Path,
+        index: int,
+        total_videos: int,
     ) -> Path:
         local_path = self.output_dir.joinpath(f"result_{index + 1}.mp4")
         start_time = time.perf_counter()
@@ -75,8 +80,9 @@ class VideoProcessor:
         try:
             subprocess.run(command, capture_output=True, text=True, check=True)
             logger.info(
-                "Finished rendering %s in %.2fs",
+                "Finished rendering [%s/%s] video in %.2fs",
                 index + 1,
+                total_videos,
                 time.perf_counter() - start_time,
             )
             return local_path
