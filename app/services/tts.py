@@ -11,27 +11,36 @@ logger = logging.getLogger(__name__)
 
 
 class TTS:
+    voices = {}
+
     def __init__(self, task_id: str):
         self.client = ElevenLabs(api_key=settings.ELEVENLABS_API_KEY)
         self.tts_dir = Path(settings.TEMP_DIR).joinpath(f"task_{task_id}", "tts")
         self.tts_dir.mkdir(parents=True, exist_ok=True)
-        self.voices = {}
 
     def _refresh_voice_map(self):
+        if TTS.voices:
+            logger.info("Using cached voice map")
         try:
             response = self.client.voices.get_all()
-            self.voices = {voice.name: voice.voice_id for voice in response.voices}
+            new_voices = {}
+            for voice in response.voices:
+                short_name = voice.name.split()[0].lower()
+
+                if short_name not in new_voices:
+                    new_voices[short_name] = voice.voice_id
+
+                new_voices[voice.name.lower()] = voice.voice_id
+
+            TTS.voices = new_voices
+
             logger.info("Voice map refreshed, loaded %s voices", len(self.voices))
         except Exception as e:
             logger.error("Failed to refresh voice map: %s", str(e))
             raise
 
     def generate_voiceover(self, text: str, voice_name: str) -> Path:
-        voice_id = self.voices.get(voice_name)
-        if not voice_id:
-            logger.info("Voice '%s' not in cache, retrying...", voice_name)
-            self._refresh_voice_map()
-            voice_id = self.voices.get(voice_name)
+        voice_id = TTS.voices.get(voice_name.lower())
 
         if not voice_id:
             raise ValueError(f"Voice '{voice_name}' is not available")
@@ -44,8 +53,8 @@ class TTS:
             return local_path
 
         try:
-            audio = self.client.text_to_speech(
-                text=text, voice_id=voice_id, model="eleven_multilingual_v1"
+            audio = self.client.text_to_speech.convert(
+                text=text, voice_id=voice_id, model_id="eleven_multilingual_v2"
             )
             save(audio, str(local_path))
 
@@ -64,7 +73,10 @@ class TTS:
     def prepare_voiceovers(self, tts_items: list[dict]):
         start_time = time.perf_counter()
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        logger.info("Updating voice map...")
+        self._refresh_voice_map()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
             futures = [
                 executor.submit(self.generate_voiceover, item["text"], item["voice"])
                 for item in tts_items
