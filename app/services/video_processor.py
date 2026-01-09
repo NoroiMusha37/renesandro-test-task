@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class VideoProcessor:
     def __init__(self, task_id: str):
-        self.output_dir = Path(settings.TEMP_DIR).joinpath(f"task_{task_id}", "results")
+        self.output_dir = settings.TEMP_DIR.joinpath(f"task_{task_id}", "results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.video_width = settings.VIDEO_WIDTH
         self.video_height = settings.VIDEO_HEIGHT

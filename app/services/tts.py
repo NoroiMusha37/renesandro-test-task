@@ -15,7 +15,7 @@ class TTS:
 
     def __init__(self, task_id: str):
         self.client = ElevenLabs(api_key=settings.ELEVENLABS_API_KEY)
-        self.tts_dir = Path(settings.TEMP_DIR).joinpath(f"task_{task_id}", "tts")
+        self.tts_dir = settings.TEMP_DIR.joinpath(f"task_{task_id}", "tts")
         self.tts_dir.mkdir(parents=True, exist_ok=True)
 
     def _refresh_voice_map(self):
@@ -76,7 +76,7 @@ class TTS:
         logger.info("Updating voice map...")
         self._refresh_voice_map()
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS_FOR_TTS) as executor:
             futures = [
                 executor.submit(self.generate_voiceover, item["text"], item["voice"])
                 for item in tts_items

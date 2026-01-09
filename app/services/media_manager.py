@@ -21,7 +21,7 @@ class MediaManager:
     def __init__(self, task_id: str):
         self.task_id = task_id
 
-        self.base_dir = Path(settings.TEMP_DIR).joinpath(f"task_{task_id}")
+        self.base_dir = settings.TEMP_DIR.joinpath(f"task_{task_id}")
         self.video_dir = self.base_dir.joinpath("videos")
         self.audio_dir = self.base_dir.joinpath("audio")
 
@@ -86,7 +86,7 @@ class MediaManager:
         unique_videos = {str(url) for block in video_blocks.values() for url in block}
         unique_audio = {str(url) for block in audio_blocks.values() for url in block}
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=settings.MAX_DOWNLOAD_WORKERS) as executor:
             video_tasks = [
                 executor.submit(self.download_file, url, self.video_dir, "video/mp4")
                 for url in unique_videos

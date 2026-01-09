@@ -47,7 +47,7 @@ def upload_task(video_path: str, task_name: str, index: int):
 
 @shared_task
 def cleanup_task(results, task_id: str, start_time):
-    work_dir = Path(settings.TEMP_DIR).joinpath(f"task_{task_id}")
+    work_dir = settings.TEMP_DIR.joinpath(f"task_{task_id}")
     if work_dir.exists():
         shutil.rmtree(work_dir)
     logger.info("Task ended in %.2fs", time.time() - start_time)

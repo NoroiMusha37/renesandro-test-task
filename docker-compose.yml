@@ -7,7 +7,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - .:/app
-      - ./tmp:/tmp
+      - .${TEMP_DIR}:${TEMP_DIR}
     env_file:
       - .env
     ports:
@@ -20,7 +20,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q heavy --concurrency=2 --loglevel=info
     volumes:
       - .:/app
-      - ./tmp:/tmp
+      - .${TEMP_DIR}:${TEMP_DIR}
     env_file:
       - .env
     depends_on:
@@ -31,7 +31,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker -Q light,celery --concurrency=4 --loglevel=info
     volumes:
       - .:/app
-      - ./tmp:/tmp
+      - .${TEMP_DIR}:${TEMP_DIR}
     env_file:
       - .env
     depends_on:
