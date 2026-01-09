@@ -12,15 +12,22 @@ logger = logging.getLogger(__name__)
 
 class TTS:
     voices = {}
+    _client = None
 
     def __init__(self, task_id: str):
-        self.client = ElevenLabs(api_key=settings.ELEVENLABS_API_KEY)
         self.tts_dir = settings.TEMP_DIR.joinpath(f"task_{task_id}", "tts")
         self.tts_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def client(self):
+        if not TTS._client:
+            TTS._client = ElevenLabs(api_key=settings.ELEVENLABS_API_KEY)
+        return TTS._client
 
     def _refresh_voice_map(self):
         if TTS.voices:
             logger.info("Using cached voice map")
+            return
         try:
             response = self.client.voices.get_all()
             new_voices = {}
