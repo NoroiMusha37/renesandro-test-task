@@ -21,7 +21,6 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://redis:6379/0"
 
-
     @property
     def gcs_credentials(self):
         try:

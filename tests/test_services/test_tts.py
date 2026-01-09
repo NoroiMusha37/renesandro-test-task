@@ -46,7 +46,9 @@ def test_generate_voiceover_success(mocker):
     TTS.voices = {"adam": "adam_id"}
     tts = TTS("test_gen")
 
-    mock_convert = mocker.patch.object(tts.client.text_to_speech, "convert", return_value=b"audio_data")
+    mock_convert = mocker.patch.object(
+        tts.client.text_to_speech, "convert", return_value=b"audio_data"
+    )
     mock_save = mocker.patch("app.services.tts.save")
 
     path = tts.generate_voiceover("Hi", "adam")

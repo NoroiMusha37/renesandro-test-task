@@ -56,9 +56,7 @@ class MediaManager:
                     )
 
                 with open(local_path, "wb") as f:
-                    for chunk in response.iter_bytes(
-                        chunk_size=settings.CHUNK_SIZE
-                    ):
+                    for chunk in response.iter_bytes(chunk_size=settings.CHUNK_SIZE):
                         f.write(chunk)
 
             file_size = local_path.stat().st_size
@@ -87,11 +85,15 @@ class MediaManager:
         with ThreadPoolExecutor(max_workers=settings.MAX_DOWNLOAD_WORKERS) as executor:
             with httpx.Client() as client:
                 video_tasks = [
-                    executor.submit(self.download_file, url, self.video_dir, "video/mp4", client)
+                    executor.submit(
+                        self.download_file, url, self.video_dir, "video/mp4", client
+                    )
                     for url in unique_videos
                 ]
                 audio_tasks = [
-                    executor.submit(self.download_file, url, self.audio_dir, "audio/mpeg", client)
+                    executor.submit(
+                        self.download_file, url, self.audio_dir, "audio/mpeg", client
+                    )
                     for url in unique_audio
                 ]
                 all_results = [f.result() for f in video_tasks + audio_tasks]

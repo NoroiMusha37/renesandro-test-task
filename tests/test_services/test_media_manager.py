@@ -15,9 +15,7 @@ def test_download_file_success(mocker):
     mock_client.stream.return_value.__enter__.return_value = mock_response
 
     url = "https://example.com/video.mp4"
-    _, local_path, size = mm.download_file(
-        url, mm.video_dir, "video/mp4", mock_client
-    )
+    _, local_path, size = mm.download_file(url, mm.video_dir, "video/mp4", mock_client)
 
     assert local_path.exists()
     assert local_path.suffix == ".mp4"

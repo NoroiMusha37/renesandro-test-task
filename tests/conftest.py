@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from app.core.config import settings
 
+
 @pytest.fixture(autouse=True)
 def cleanup_tmp():
     yield
