@@ -57,6 +57,7 @@ class TTS:
         local_path = self.tts_dir.joinpath(f"{voiceover_hash}.mp3")
 
         if local_path.exists():
+            logger.info("Using cached voiceover")
             return local_path
 
         try:
