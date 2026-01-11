@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7-alpine
+
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+      - .${TEMP_DIR}:${TEMP_DIR}
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  worker-heavy:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q heavy --concurrency=2 --loglevel=info
+    volumes:
+      - .:/app
+      - .${TEMP_DIR}:${TEMP_DIR}
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  worker-light:
+    build: .
+    command: celery -A app.core.celery_app.celery_app worker -Q light,celery --concurrency=4 --loglevel=info
+    volumes:
+      - .:/app
+      - .${TEMP_DIR}:${TEMP_DIR}
+    env_file:
+      - .env
+    depends_on:
+      - redis

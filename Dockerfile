@@ -1,0 +1,18 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m appuser
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /tmp && chmod 777 /tmp && chown -R appuser:appuser /app /tmp
+
+USER appuser
