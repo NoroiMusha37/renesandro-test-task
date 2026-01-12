@@ -13,8 +13,9 @@ def test_render_command_construction(mocker):
     music = Path("music.mp3")
     voiceover = Path("vo.mp3")
     index = 0
+    total_videos = 10
 
-    vp.render(video_list, music, voiceover, index)
+    vp.render(video_list, music, voiceover, index, total_videos)
 
     args, kwargs = mock_run.call_args
     command = args[0]
@@ -34,7 +35,7 @@ def test_render_success_return_path(mocker):
     vp = VideoProcessor("test_path")
     mocker.patch("subprocess.run")
 
-    result_path = vp.render([Path("v.mp4")], Path("m.mp3"), Path("vo.mp3"), 5)
+    result_path = vp.render([Path("v.mp4")], Path("m.mp3"), Path("vo.mp3"), 5, 10)
 
     assert result_path.name == "result_6.mp4"
     assert isinstance(result_path, Path)
@@ -49,4 +50,4 @@ def test_render_error_handling(mocker):
     )
 
     with pytest.raises(subprocess.CalledProcessError):
-        vp.render([Path("v.mp4")], Path("m.mp3"), Path("vo.mp3"), 0)
+        vp.render([Path("v.mp4")], Path("m.mp3"), Path("vo.mp3"), 0, 10)
