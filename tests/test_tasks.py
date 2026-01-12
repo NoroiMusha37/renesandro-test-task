@@ -15,6 +15,7 @@ def test_render_task_logic(mocker):
         "music": "m.mp3",
         "voiceover": "vo.mp3",
         "index": 0,
+        "total_videos": 10,
     }
 
     result = render_task(params)
